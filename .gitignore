@@ -1,0 +1,31 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Environment secrets/config ---
+.env
+src/backend/.env
+
+# --- Model weights (large binaries; keep classes.txt tracked) ---
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Logs ---
+*.log

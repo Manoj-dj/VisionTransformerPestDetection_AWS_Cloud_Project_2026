@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgriVision PestGuard</title>
+<meta name="description" content="Vision Transformer-Based Early Pest Detection Platform" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🌿</span>
+        <div>
+          <h1>AgriVision PestGuard</h1>
+          <p class="subtitle">Vision Transformer-Based Early Pest Detection Platform</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <span id="statusDot" class="status-dot status-unknown" aria-hidden="true"></span>
+        <span id="statusText">Checking API…</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero card">
+      <div>
+        <span class="badge">IP102 • ViT-B/16 • 102 classes</span>
+        <h2>Upload a crop or pest image for AI analysis</h2>
+        <p>
+          AgriVision PestGuard runs a Vision Transformer trained on the IP102 insect
+          pest dataset to classify the pest present in an image and highlight, via
+          Grad-CAM, the image regions that most influenced the prediction. This is an
+          image-level classifier with an explanation heatmap — it does not draw
+          object-detection bounding boxes.
+        </p>
+      </div>
+    </section>
+
+    <section class="card upload-card">
+      <h3>1. Upload image</h3>
+      <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="Upload image, drag and drop or browse">
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden />
+        <div id="dropZoneContent">
+          <span class="drop-icon" aria-hidden="true">📤</span>
+          <p><strong>Drag &amp; drop</strong> an image here, or</p>
+          <button type="button" id="browseBtn" class="btn btn-secondary">Browse files</button>
+          <p class="hint">Accepted: JPG, JPEG, PNG · Maximum size: 10 MB</p>
+        </div>
+      </div>
+
+      <div id="previewWrap" class="preview-wrap" hidden>
+        <img id="previewImg" alt="Selected image preview" />
+        <div class="preview-actions">
+          <span id="fileMeta" class="file-meta"></span>
+          <div class="preview-buttons">
+            <button type="button" id="resetBtn" class="btn btn-secondary">Remove</button>
+            <button type="button" id="analyzeBtn" class="btn btn-primary">Analyze image</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="loadingState" class="loading-state" role="status" aria-live="polite" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Analyzing image with ViT…</span>
+      </div>
+
+      <div id="errorAlert" class="alert alert-error" role="alert" hidden></div>
+    </section>
+
+    <section id="resultsSection" class="card results-card" hidden>
+      <h3>2. Prediction results</h3>
+
+      <div class="results-grid">
+        <div class="result-primary">
+          <p class="eyebrow">Predicted pest</p>
+          <h2 id="predictedName">—</h2>
+          <p class="confidence-label"><span id="confidenceValue">0%</span> confidence</p>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="confidenceBar">
+            <div class="progress-fill" id="confidenceFill"></div>
+          </div>
+
+          <div class="meta-row">
+            <span>Latency: <strong id="latencyValue">—</strong> ms</span>
+            <span>Model: <strong id="modelVersionValue">—</strong></span>
+          </div>
+
+          <h4>Top 5 predictions</h4>
+          <ol id="topKList" class="top-k-list"></ol>
+        </div>
+
+        <div class="result-images">
+          <div class="image-block">
+            <p class="eyebrow">Original image</p>
+            <img id="originalImage" alt="Original uploaded image" />
+          </div>
+          <div class="image-block">
+            <p class="eyebrow">Grad-CAM overlay</p>
+            <img id="gradcamImage" alt="Grad-CAM explanation overlay" />
+            <p id="gradcamNote" class="hint">
+              Highlighted regions show areas that influenced the model prediction.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container">
+      <p>
+        AgriVision PestGuard — Vision Transformer-Based Cloud Platform for Early Pest
+        Detection. Academic/cloud-computing course project. Local reference
+        implementation designed for future migration to AWS (S3, SageMaker/EC2, API
+        Gateway, CloudWatch, Cognito, SNS).
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# AgriVision PestGuard backend - Python dependencies
+#
+# Torch/torchvision are pinned to the official CPU-only wheels so that
+# `pip install -r requirements.txt` (or `uv pip install -r requirements.txt`)
+# never pulls a CUDA build. If you have a CUDA-capable GPU and want to use
+# it, remove the two --extra-index-url lines below and the "+cpu" suffixes,
+# then reinstall torch/torchvision from https://pytorch.org/get-started/locally/
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-multipart==0.0.19
+pydantic==2.10.3
+python-dotenv==1.0.1
+
+pillow==11.0.0
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+timm==0.9.16
+# PyPI package name is "grad-cam"; the import name remains "pytorch_grad_cam".
+grad-cam==1.5.7
+
+pytest==8.3.4
+httpx==0.28.1
