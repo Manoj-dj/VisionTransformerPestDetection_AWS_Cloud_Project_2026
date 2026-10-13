@@ -141,6 +141,25 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 Same validation and classification as `/predict`, without Grad-CAM, for
 lower latency.
 
+### `POST /chat/insights`
+Body: `{ predicted_class, top_k_predictions }` (same shapes `/predict`
+returns). Generates the automatic post-prediction recommendation message
+using Gemini (`GEMINI_MODEL`), grounded in the prediction. Returns
+`{ "message": "..." }`.
+
+### `POST /chat/message`
+Body: `{ predicted_class, top_k_predictions, history, message }` where
+`history` is the prior `[{role, content}]` turns. Continues the advisory
+conversation. Returns `{ "message": "..." }`.
+
+### `POST /chat/transcribe`
+Multipart upload, field name `audio` (webm/ogg/wav/mp4, 15 MB max by
+default). Transcribes speech to text using `GEMINI_TRANSCRIBE_MODEL`
+(speech-to-text only, no text-to-speech). Returns `{ "text": "..." }`.
+
+All three return `503` if `GEMINI_API_KEY` is not set, and never leak the
+key or raw Gemini error bodies to the client.
+
 ## 7. Tests
 
 ```bash

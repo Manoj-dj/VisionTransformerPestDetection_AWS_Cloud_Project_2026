@@ -92,9 +92,43 @@ class Settings:
     app_version: str = field(default_factory=lambda: os.getenv("APP_VERSION", "1.0.0"))
     app_name: str = field(default_factory=lambda: os.getenv("APP_NAME", "AgriVision PestGuard API"))
 
+    # --- Gemini advisory chatbot + voice transcription -----------------------
+    # The API key is read server-side only and is never sent to the frontend.
+    gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
+    gemini_model: str = field(default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-3.6-flash"))
+    gemini_transcribe_model: str = field(
+        default_factory=lambda: os.getenv("GEMINI_TRANSCRIBE_MODEL", "gemini-3.5-transcribe")
+    )
+    gemini_api_base: str = field(
+        default_factory=lambda: os.getenv(
+            "GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta"
+        )
+    )
+    gemini_timeout_seconds: float = field(
+        default_factory=lambda: float(os.getenv("GEMINI_TIMEOUT_SECONDS", "45"))
+    )
+    max_audio_mb: float = field(default_factory=lambda: float(os.getenv("MAX_AUDIO_MB", "15")))
+    allowed_audio_content_types: tuple[str, ...] = (
+        "audio/webm",
+        "audio/ogg",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/mp4",
+        "audio/mpeg",
+        "audio/mp3",
+    )
+
+    @property
+    def gemini_enabled(self) -> bool:
+        return bool(self.gemini_api_key)
+
     @property
     def max_upload_bytes(self) -> int:
         return int(self.max_upload_mb * 1024 * 1024)
+
+    @property
+    def max_audio_bytes(self) -> int:
+        return int(self.max_audio_mb * 1024 * 1024)
 
     @property
     def imagenet_mean(self) -> tuple[float, float, float]:

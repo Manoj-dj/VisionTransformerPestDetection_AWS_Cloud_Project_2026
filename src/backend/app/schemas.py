@@ -79,3 +79,35 @@ class ClassificationOnlyResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     request_id: Optional[str] = None
+
+
+# --- Gemini advisory chatbot ---------------------------------------------------
+
+
+class ChatMessage(BaseModel):
+    role: str = Field(..., pattern="^(user|assistant)$")
+    content: str = Field(..., min_length=1, max_length=4000)
+
+
+class ChatInsightsRequest(BaseModel):
+    predicted_class: ClassPrediction
+    top_k_predictions: list[ClassPrediction]
+
+
+class ChatInsightsResponse(BaseModel):
+    message: str
+
+
+class ChatMessageRequest(BaseModel):
+    predicted_class: ClassPrediction
+    top_k_predictions: list[ClassPrediction]
+    history: list[ChatMessage] = Field(default_factory=list, max_length=30)
+    message: str = Field(..., min_length=1, max_length=2000)
+
+
+class ChatMessageResponse(BaseModel):
+    message: str
+
+
+class TranscribeResponse(BaseModel):
+    text: str

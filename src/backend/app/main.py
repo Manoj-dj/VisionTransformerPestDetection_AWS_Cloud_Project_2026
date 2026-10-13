@@ -9,15 +9,18 @@ straightforward to front with API Gateway later.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.chat_routes import router as chat_router
 from app.config import settings
 from app.explainability import ExplainabilityError, generate_gradcam
 from app.image_utils import (
@@ -71,6 +74,8 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+app.include_router(chat_router)
 
 
 def _require_model() -> ModelBundle:
@@ -130,13 +135,56 @@ async def metadata() -> MetadataResponse:
     )
 
 
-async def _read_and_validate_upload(file: UploadFile) -> bytes:
-    raw_bytes = await file.read()
-    try:
-        validate_upload(file.filename, file.content_type, len(raw_bytes))
-    except ImageValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return raw_bytes
+async def _extract_image_bytes(request: Request) -> bytes:
+    """Read the uploaded image from either a multipart upload or a JSON body.
+
+    The frontend may submit the image either as multipart/form-data (field
+    name "file", used when running against the local backend directly) or as
+    a JSON body `{"image_base64": "..."}` (used by the resize-before-upload
+    path and the deployed API Gateway/Lambda integration). Both are accepted
+    here so the same frontend code works against either backend unchanged.
+    """
+
+    content_type = request.headers.get("content-type", "")
+
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        upload = form.get("file")
+        if upload is None:
+            raise HTTPException(status_code=400, detail="Missing 'file' field in multipart form data.")
+        raw_bytes = await upload.read()
+        try:
+            validate_upload(upload.filename, upload.content_type, len(raw_bytes))
+        except ImageValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return raw_bytes
+
+    if "application/json" in content_type:
+        try:
+            body = await request.json()
+        except Exception as exc:  # noqa: BLE001 - any JSON parse failure is a 400
+            raise HTTPException(status_code=400, detail="Invalid JSON body.") from exc
+
+        image_b64 = body.get("image_base64") if isinstance(body, dict) else None
+        if not image_b64:
+            raise HTTPException(
+                status_code=400, detail="JSON body must include a non-empty 'image_base64' field."
+            )
+        try:
+            raw_bytes = base64.b64decode(image_b64, validate=True)
+        except (binascii.Error, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="'image_base64' is not valid base64 data.") from exc
+
+        try:
+            validate_upload("upload.jpg", "image/jpeg", len(raw_bytes))
+        except ImageValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return raw_bytes
+
+    raise HTTPException(
+        status_code=400,
+        detail="Unsupported content type. Use multipart/form-data or application/json.",
+    )
 
 
 def _ranked_to_schema(prediction) -> ClassPrediction:
@@ -149,14 +197,14 @@ def _ranked_to_schema(prediction) -> ClassPrediction:
 
 
 @app.post("/predict")
-async def predict(request: Request, file: UploadFile = File(...)):
+async def predict(request: Request):
     """Classify an uploaded pest/crop image and explain the prediction with Grad-CAM."""
 
     bundle = _require_model()
     request_id = getattr(request.state, "request_id", str(uuid.uuid4()))
     start = time.perf_counter()
 
-    raw_bytes = await _read_and_validate_upload(file)
+    raw_bytes = await _extract_image_bytes(request)
 
     try:
         decoded = decode_image(raw_bytes)
@@ -196,7 +244,7 @@ async def predict(request: Request, file: UploadFile = File(...)):
         "confidence=%.4f gradcam_ok=%s model_version=%s",
         request_id,
         len(raw_bytes),
-        file.content_type,
+        request.headers.get("content-type", "unknown"),
         latency_ms,
         result.predicted.class_name,
         result.predicted.confidence,
@@ -218,14 +266,14 @@ async def predict(request: Request, file: UploadFile = File(...)):
 
 
 @app.post("/predict/classification-only")
-async def predict_classification_only(request: Request, file: UploadFile = File(...)):
+async def predict_classification_only(request: Request):
     """Classify an uploaded image without generating Grad-CAM, for lower latency."""
 
     bundle = _require_model()
     request_id = getattr(request.state, "request_id", str(uuid.uuid4()))
     start = time.perf_counter()
 
-    raw_bytes = await _read_and_validate_upload(file)
+    raw_bytes = await _extract_image_bytes(request)
 
     try:
         decoded = decode_image(raw_bytes)
@@ -242,7 +290,7 @@ async def predict_classification_only(request: Request, file: UploadFile = File(
         "confidence=%.4f gradcam_ok=n/a model_version=%s",
         request_id,
         len(raw_bytes),
-        file.content_type,
+        request.headers.get("content-type", "unknown"),
         latency_ms,
         result.predicted.class_name,
         result.predicted.confidence,
