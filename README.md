@@ -1,5 +1,6 @@
 # VisionTransformerPestDetection_AWS_Cloud_Project_2026
 
+
 A Vision Transformer–based cloud platform on AWS for **early insect pest detection** in crops using leaf and canopy images captured via mobile devices and UAVs. The goal is to provide farmers and agronomists with a scalable, explainable, and low-latency pest detection service backed by modern MLOps on AWS.[web:44]
 
 ---
